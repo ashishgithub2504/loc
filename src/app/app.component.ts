@@ -5,6 +5,9 @@ import { SplashScreen } from '@ionic-native/splash-screen';
 
 import { HomePage } from '../pages/home/home';
 import { ListPage } from '../pages/list/list';
+import { LocationAccuracy } from '@ionic-native/location-accuracy';
+import { Geolocation } from '@ionic-native/geolocation';
+import { GeoProvider } from '../providers/geo/geo';
 
 @Component({
   templateUrl: 'app.html'
@@ -16,7 +19,7 @@ export class MyApp {
 
   pages: Array<{title: string, component: any}>;
 
-  constructor(public platform: Platform, public statusBar: StatusBar, public splashScreen: SplashScreen) {
+  constructor(private geolocation: Geolocation ,public GeoProvider: GeoProvider , private locationAccuracy: LocationAccuracy ,public platform: Platform, public statusBar: StatusBar, public splashScreen: SplashScreen) {
     this.initializeApp();
 
     // used for an example of ngFor and navigation
@@ -24,6 +27,53 @@ export class MyApp {
       { title: 'Home', component: HomePage },
       { title: 'List', component: ListPage }
     ];
+
+
+    this.geolocation.getCurrentPosition().then((resp) => {
+      // resp.coords.latitude
+      // resp.coords.longitude
+     }).catch((error) => {
+       console.log('Error getting location', error);
+     });
+     
+     let watch = this.geolocation.watchPosition();
+     watch.subscribe((data) => {
+       console.log(data.coords.latitude);
+       console.log(data.coords.longitude);
+      // data can be a set of coordinates, or an error (if an error occurred).
+      // data.coords.latitude
+      // data.coords.longitude
+     });
+
+
+    this.locationAccuracy.canRequest().then((canRequest: boolean) => {
+
+      if(canRequest) {
+        // the accuracy option will be ignored by iOS
+        this.locationAccuracy.request(this.locationAccuracy.REQUEST_PRIORITY_HIGH_ACCURACY).then(
+          () => {
+            this.geolocation.getCurrentPosition().then((resp) => {
+              // resp.coords.latitude
+              // resp.coords.longitude
+             }).catch((error) => {
+               console.log('Error getting location', error);
+             });
+             
+             let watch = this.geolocation.watchPosition();
+             watch.subscribe((data) => {
+               console.log(data.coords.latitude);
+               console.log(data.coords.longitude);
+			   this.GeoProvider.login(data.coords.longitude+'/'+data.coords.latitude);
+              // data can be a set of coordinates, or an error (if an error occurred).
+              // data.coords.latitude
+              // data.coords.longitude
+             });
+          },
+          error => console.log('Error requesting location permissions', error)
+        );
+      }
+    
+    });
 
   }
 
